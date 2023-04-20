@@ -163,16 +163,32 @@ func (a *abstractor) abstractIndexMetadata(ctx context.Context, art *artifact.Ar
 		// make sure the child artifact exist
 		ar, err := a.artMgr.GetByDigest(ctx, art.RepositoryName, digest)
 		if err != nil {
-			return err
+			log.Info(fmt.Sprintf("abstractIndexMetadata 2, repoName: %s, digest: %s: %v", art.RepositoryName, digest, err))
+			blob, err := a.blobMgr.Get(ctx, digest)
+
+			if err != nil {
+				log.Info(fmt.Sprintf("abstractIndexMetadata bolb, repoName: %s, digest: %s: %v", art.RepositoryName, digest, err))
+				return err
+			} else {
+				art.Size += blob.Size
+				// art.References = append(art.References, &artifact.Reference{
+				// 	ChildID:     blob.ID,
+				// 	ChildDigest: digest,
+				// 	Platform:    mani.Platform,
+				// 	URLs:        mani.URLs,
+				// 	Annotations: mani.Annotations,
+				// })
+			}
+		} else {
+			art.Size += ar.Size
+			art.References = append(art.References, &artifact.Reference{
+				ChildID:     ar.ID,
+				ChildDigest: digest,
+				Platform:    mani.Platform,
+				URLs:        mani.URLs,
+				Annotations: mani.Annotations,
+			})
 		}
-		art.Size += ar.Size
-		art.References = append(art.References, &artifact.Reference{
-			ChildID:     ar.ID,
-			ChildDigest: digest,
-			Platform:    mani.Platform,
-			URLs:        mani.URLs,
-			Annotations: mani.Annotations,
-		})
 	}
 
 	// Currently, CNAB put its media type inside the annotations
